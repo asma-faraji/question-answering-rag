@@ -17,29 +17,30 @@ logging.getLogger().addHandler(logging.StreamHandler(stream=sys.stdout))
 
 class FineTunePipeline:
 
-    def __init__(self, embbed_model_name='sentence-transformers/all-mpnet-base-v2', 
-                llm_model_name='mistralai/Mistral-7B-Instruct-v0.1', 
-                llm_tokenizer_name='mistralai/Mistral-7B-Instruct-v0.1',
-                train_dataset_path='train_dataset.json',
-                val_dataset_path='val_dataset.json') -> None:
+    embbed_model_name='sentence-transformers/all-mpnet-base-v2'
+    llm_model_name='mistralai/Mistral-7B-Instruct-v0.1'
+    llm_tokenizer_name='mistralai/Mistral-7B-Instruct-v0.1'
+    train_dataset_path='train_dataset.json'
+    val_dataset_path='val_dataset.json'
 
-        
-        self.embed_model_name = embbed_model_name
-        self.train_dataset_path = train_dataset_path
-        self.val_dataset_path = val_dataset_path
-
-        self.llm = llm = HuggingFaceLLM(
-            context_window=4096,
-            max_new_tokens=256,
-            generate_kwargs={"temperature": 0.7, "do_sample": False},
-            tokenizer_name=llm_tokenizer_name,
-            model_name=llm_model_name,
-            device_map="auto",
-            tokenizer_kwargs={"max_length": 4096},
-            # uncomment this if using CUDA to reduce memory usage
-            # model_kwargs={"torch_dtype": torch.float16}
-        )
+    llm = HuggingFaceLLM(
+        context_window=4096,
+        max_new_tokens=256,
+        generate_kwargs={"temperature": 0.7, "do_sample": False},
+        tokenizer_name=llm_tokenizer_name,
+        model_name=llm_model_name,
+        device_map="auto",
+        tokenizer_kwargs={"max_length": 4096},
+        # uncomment this if using CUDA to reduce memory usage
+        # model_kwargs={"torch_dtype": torch.float16}
+    )
     
+    # def __init__(self, embbed_model_name='sentence-transformers/all-mpnet-base-v2', 
+    #             llm_model_name='mistralai/Mistral-7B-Instruct-v0.1', 
+    #             llm_tokenizer_name='mistralai/Mistral-7B-Instruct-v0.1',
+    #             train_dataset_path='train_dataset.json',
+    #             val_dataset_path='val_dataset.json') -> None:
+
     @classmethod
     def load_corpus(cls, files, verbose=False):
         if verbose:
@@ -77,10 +78,11 @@ class FineTunePipeline:
 
 
         train_dataset = EmbeddingQAFinetuneDataset.from_json(cls.train_dataset_path)
-        val_dataset = EmbeddingQAFinetuneDataset.from_json(self.val_dataset_path)
+        val_dataset = EmbeddingQAFinetuneDataset.from_json(cls.val_dataset_path)
         finetune_engine = SentenceTransformersFinetuneEngine(
+        epochs=10,
         train_dataset,
-        model_id=cls.embed_model_name,
+        model_id=cls.embbed_model_name,
         model_output_path="test_model",
         val_dataset=val_dataset,
         )
@@ -90,13 +92,21 @@ class FineTunePipeline:
 
         return embed_model
 
-    
+
+
     
 fine_tuner = FineTunePipeline()
 
 print('load datasets')
+
+TRAIN_FILES = ['/home/commtel/model/data/T5120/T5120-FDS CCTV.pdf']
+VAL_FILES = ['/home/commtel/model/data/T5120/CT-T5120-ES-0301_AB.pdf']
+
 train_nodes = FineTunePipeline.load_corpus(TRAIN_FILES, verbose=True)
 val_nodes = FineTunePipeline.load_corpus(VAL_FILES, verbose=True)
 
+print('generate qa')
 FineTunePipeline.generate_embedding_pairs(train_nodes, val_nodes)
-FineTunePipeline.fine_tune_embeddings()
+
+print('train_model')
+embed_model = FineTunePipeline.fine_tune_embeddings()
