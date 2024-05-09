@@ -16,6 +16,10 @@ from llama_index.core import (
     ServiceContext,
     Document
 )
+from llama_index.core import SimpleDirectoryReader, get_response_synthesizer
+from llama_index.core import DocumentSummaryIndex
+from llama_index.llms.openai import OpenAI
+from llama_index.core.node_parser import SentenceSplitter
 
 from llama_index.core.node_parser import SentenceWindowNodeParser, HierarchicalNodeParser, get_leaf_nodes
 # from llama_index.text_splitter import SentenceSplitter
@@ -59,9 +63,9 @@ sentence_node_parser = SentenceWindowNodeParser.from_defaults(
     original_text_metadata_key="original_text"
 )
 
-# embed_model_name = "sentence-transformers/all-mpnet-base-v2"
-embed_model_name = "/home/commtel/Vatsal/Commtel-RAG/notebooks/src/finetune/test_model"
-indexer_db = 'fine_tuned_lenel_book-mpnet-base-v2_sentence_idx_other'
+embed_model_name = "sentence-transformers/all-mpnet-base-v2"
+# embed_model_name = "/home/commtel/Vatsal/Commtel-RAG/notebooks/src/finetune/test_model"
+indexer_db = 'summary_index'
 
 print(embed_model_name)
 print(indexer_db)
@@ -89,34 +93,67 @@ callback_manager = CallbackManager([llama_debug])
 
 root = "/home/commtel/model/data/Other"
 print(root)
-# documents = []
+documents = []
 from tqdm import tqdm
 first_time = True
+# first_time = False
 counter = 1
 sentence_index = None
 
+import nest_asyncio
+
+nest_asyncio.apply()
+
+splitter = SentenceSplitter(chunk_size=1024)
+# default mode of building the index
+response_synthesizer = get_response_synthesizer(
+    response_mode="tree_summarize", use_async=True, llm=llm
+)
 
 for path, subdirs, files in os.walk(root):
-    for name in tqdm(files):
+    for name in tqdm(files[1:]):
         if os.path.join(path, name).endswith(".pdf"):
             if counter % 10 == 0:
                 print('saving started ....')
-                sentence_index.storage_context.persist(persist_dir=indexer_db)
-                sentence_index = load_index_from_storage(
-                StorageContext.from_defaults(persist_dir=indexer_db),
-                llm=llm, embed_model=embed_model, callback_manager=callback_manager
-                )
+                doc_summary_index.storage_context.persist(persist_dir=indexer_db)
+                doc_summary_index = load_index_from_storage(
+                StorageContext.from_defaults(persist_dir=indexer_db),llm=llm,callback_manager=callback_manager,embed_model=embed_model,
+                transformations=[splitter], response_synthesizer=response_synthesizer, show_progress=True,)
+                
             if first_time:
                 print(counter , ':' , os.path.join(path, name))
-                document = SimpleDirectoryReader(input_files=[os.path.join(path, name)]).load_data()
-                nodes = sentence_node_parser.get_nodes_from_documents(document)
-                sentence_index = VectorStoreIndex(nodes, llm=llm, embed_model=embed_model, callback_manager=callback_manager)
+                document = SimpleDirectoryReader(input_files=[os.path.join(path, name)]).load_data()[0:1]
+                print('-------------------------------------------------------')
+                print(document[0])
+                print('-------------------------------------------------------')
+
+                document[0].doc_id = name
+                print('documents')
+                print(len(document), type(document), type(document[0]))
+                # print(document[0].doc_id, document[1].doc_id)
+                # exit()
+                doc_summary_index = DocumentSummaryIndex.from_documents(
+                                    document,
+                                    embed_model=embed_model,
+                                    llm=llm,
+                                    transformations=[splitter],
+                                    response_synthesizer=response_synthesizer,
+                                    show_progress=True,
+                                    )
+                ##
+                # sentence_index = VectorStoreIndex(nodes, llm=llm, embed_model=embed_model, callback_manager=callback_manager)
                 first_time = False
             else:
-                print(counter , ':' ,os.path.join(path, name))
                 document = SimpleDirectoryReader(input_files=[os.path.join(path, name)]).load_data()
-                node = sentence_node_parser.get_nodes_from_documents(document)
-                sentence_index.insert_nodes(node)
+                # add doc_id
+                document[0].doc_id = name
+                parser = SentenceSplitter(chunk_size=1024)
+                nodes = parser.get_nodes_from_documents(document)
+                print('nodes-----------------------------------------------')
+                print(len(nodes))
+                print(type(nodes), type(nodes[0]))
+                doc_summary_index.insert([nodes])
+                print('suceess ------------------------------------------------')
                 counter += 1
 
-sentence_index.storage_context.persist(persist_dir=indexer_db)
+doc_summary_index.storage_context.persist(persist_dir=indexer_db)
