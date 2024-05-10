@@ -103,7 +103,7 @@ callback_manager = CallbackManager([llama_debug])
 
 indexer_db = './test_pipeline/other_keyword_indexer'
 
-root = "/home/commtel/model/data/Other"
+root = "path/to/folder"
 print(root)
 documents = []
 from tqdm import tqdm

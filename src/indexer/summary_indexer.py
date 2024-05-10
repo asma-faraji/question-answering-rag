@@ -64,7 +64,7 @@ sentence_node_parser = SentenceWindowNodeParser.from_defaults(
 )
 
 embed_model_name = "sentence-transformers/all-mpnet-base-v2"
-# embed_model_name = "/home/commtel/Vatsal/Commtel-RAG/notebooks/src/finetune/test_model"
+# embed_model_name = ""
 indexer_db = 'summary_index'
 
 print(embed_model_name)
@@ -91,7 +91,7 @@ callback_manager = CallbackManager([llama_debug])
 # ctx_sentence = ServiceContext.from_defaults(llm=llm, embed_model=embed_model, node_parser=sentence_node_parser, callback_manager=callback_manager)
 
 
-root = "/home/commtel/model/data/Other"
+root = "path/to/folder"
 print(root)
 documents = []
 from tqdm import tqdm

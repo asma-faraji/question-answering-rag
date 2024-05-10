@@ -60,7 +60,7 @@ sentence_node_parser = SentenceWindowNodeParser.from_defaults(
 )
 
 # embed_model_name = "sentence-transformers/all-mpnet-base-v2"
-embed_model_name = "/home/commtel/Vatsal/Commtel-RAG/notebooks/src/finetune/test_model"
+embed_model_name = "path/to/folder"
 indexer_db = 'fine_tuned_lenel_book-mpnet-base-v2_sentence_idx_other'
 
 print(embed_model_name)
