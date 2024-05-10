@@ -1,0 +1,7 @@
+test:
+    indexer_db: 'path'
+    embed_mdoel_name : 'path'
+    test_file : 'path'
+    result_file : 'path'
+
+

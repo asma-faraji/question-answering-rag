@@ -99,8 +99,8 @@ fine_tuner = FineTunePipeline()
 
 print('load datasets')
 
-TRAIN_FILES = ['/home/commtel/model/data/T5120/T5120-FDS CCTV.pdf']
-VAL_FILES = ['/home/commtel/model/data/T5120/CT-T5120-ES-0301_AB.pdf']
+TRAIN_FILES = ['path/to/folder']
+VAL_FILES = ['/path/to/folder']
 
 train_nodes = FineTunePipeline.load_corpus(TRAIN_FILES, verbose=True)
 val_nodes = FineTunePipeline.load_corpus(VAL_FILES, verbose=True)
